@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, SearchParamError } from '@tanstack/react-router'
 import { useState, useEffect } from 'react'
 import useSWR from 'swr'
 import { qiitaFetcher, qiitaEndpoints } from '../lib/qiita-client'
@@ -36,7 +36,13 @@ export const Route = createFileRoute('/')({
   component: RouteComponent,
   validateSearch: createStandardSchemaV1(searchParams, {
     partialOutput: true
-  })
+  }),
+  errorComponent: ({ error }) => {
+    console.error(error)
+    if (error instanceof SearchParamError) {
+      return <div>検索パラメータが正しくありません</div>
+    }
+  }
 })
 
 function RouteComponent() {
