@@ -1,14 +1,12 @@
-import { createRootRoute, Link, Outlet } from '@tanstack/react-router'
+import { createRootRoute, Outlet } from '@tanstack/react-router'
+import { NuqsAdapter } from 'nuqs/adapters/tanstack-router'
+import '../App.css'
 
 const RootLayout = () => (
   <>
-    <div className="p-2 flex gap-2">
-      <Link to="/" className="[&.active]:font-bold">
-        Home
-      </Link>
-    </div>
-    <hr />
-    <Outlet />
+    <NuqsAdapter>
+      <Outlet />
+    </NuqsAdapter>
   </>
 )
 
