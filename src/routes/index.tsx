@@ -1,7 +1,19 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import useSWR from 'swr'
 import { qiitaFetcher, qiitaEndpoints } from '../lib/qiita-client'
+import {
+  createStandardSchemaV1,
+  parseAsInteger,
+  parseAsString,
+  useQueryStates
+} from 'nuqs'
+
+const searchParams = {
+  page: parseAsInteger.withDefault(1),
+  perPage: parseAsInteger.withDefault(20),
+  query: parseAsString.withDefault(''),
+}
 
 interface QiitaUser {
   id: string
@@ -22,13 +34,35 @@ interface QiitaItem {
 
 export const Route = createFileRoute('/')({
   component: RouteComponent,
+  validateSearch: createStandardSchemaV1(searchParams, {
+    partialOutput: true
+  })
 })
 
 function RouteComponent() {
-  // Query parameters state
-  const [page, setPage] = useState(1)
-  const [perPage, setPerPage] = useState(20)
-  const [query, setQuery] = useState('')
+  // URL params (managed by nuqs)
+  const [{ page, perPage, query }, setSearchParams] = useQueryStates(searchParams)
+
+  // Local state for form inputs
+  const [localPage, setLocalPage] = useState(page)
+  const [localPerPage, setLocalPerPage] = useState(perPage)
+  const [localQuery, setLocalQuery] = useState(query)
+
+  // Sync URL params to local state when they change
+  useEffect(() => {
+    setLocalPage(page)
+    setLocalPerPage(perPage)
+    setLocalQuery(query)
+  }, [page, perPage, query])
+
+  // Handle search button click
+  const handleSearch = () => {
+    setSearchParams({
+      page: localPage,
+      perPage: localPerPage,
+      query: localQuery
+    })
+  }
 
   // Qiita API demo
   const {
@@ -97,8 +131,9 @@ function RouteComponent() {
             </label>
             <input
               type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              value={localQuery}
+              onChange={(e) => setLocalQuery(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
               placeholder="e.g. tag:React, user:username"
               style={{ width: '400px', padding: '5px' }}
             />
@@ -110,8 +145,9 @@ function RouteComponent() {
             </label>
             <input
               type="number"
-              value={page}
-              onChange={(e) => setPage(Math.max(1, parseInt(e.target.value) || 1))}
+              value={localPage}
+              onChange={(e) => setLocalPage(Math.max(1, parseInt(e.target.value) || 1))}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
               min="1"
               style={{ width: '100px', padding: '5px' }}
             />
@@ -123,12 +159,31 @@ function RouteComponent() {
             </label>
             <input
               type="number"
-              value={perPage}
-              onChange={(e) => setPerPage(Math.min(100, Math.max(1, parseInt(e.target.value) || 20)))}
+              value={localPerPage}
+              onChange={(e) => setLocalPerPage(Math.min(100, Math.max(1, parseInt(e.target.value) || 20)))}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
               min="1"
               max="100"
               style={{ width: '100px', padding: '5px' }}
             />
+          </div>
+
+          <div style={{ marginBottom: '10px' }}>
+            <button
+              onClick={handleSearch}
+              style={{
+                padding: '8px 24px',
+                backgroundColor: '#646cff',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: '500'
+              }}
+            >
+              Search
+            </button>
           </div>
 
           <div style={{ fontSize: '0.9em', color: '#888', marginTop: '10px' }}>
@@ -144,7 +199,7 @@ function RouteComponent() {
 
         {publicItemsLoading && <p>Loading public items...</p>}
         {publicItemsError && <p style={{ color: 'red' }}>Error: {publicItemsError.message}</p>}
-        {publicItems && (
+        {publicItems && publicItems.length > 0 && (
           <>
             <p style={{ color: '#666' }}>Showing {publicItems.length} items (Page {page})</p>
             <ul style={{ textAlign: 'left', maxWidth: '600px', margin: '0 auto' }}>
@@ -163,15 +218,23 @@ function RouteComponent() {
 
             <div style={{ marginTop: '20px' }}>
               <button
-                onClick={() => setPage(Math.max(1, page - 1))}
+                onClick={() => {
+                  const newPage = Math.max(1, page - 1)
+                  setLocalPage(newPage)
+                  setSearchParams({ page: newPage, perPage, query })
+                }}
                 disabled={page === 1}
-                style={{ marginRight: '10px', padding: '5px 15px' }}
+                style={{ marginRight: '10px', padding: '5px 15px', cursor: page === 1 ? 'not-allowed' : 'pointer' }}
               >
                 Previous
               </button>
               <button
-                onClick={() => setPage(page + 1)}
-                style={{ padding: '5px 15px' }}
+                onClick={() => {
+                  const newPage = page + 1
+                  setLocalPage(newPage)
+                  setSearchParams({ page: newPage, perPage, query })
+                }}
+                style={{ padding: '5px 15px', cursor: 'pointer' }}
               >
                 Next
               </button>
