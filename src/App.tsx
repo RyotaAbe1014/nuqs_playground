@@ -1,17 +1,6 @@
-import { useState } from 'react'
 import useSWR from 'swr'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
 import './App.css'
-import { fetcher } from './lib/fetcher'
 import { qiitaFetcher, qiitaEndpoints } from './lib/qiita-client'
-
-interface User {
-  id: number
-  name: string
-  email: string
-  username: string
-}
 
 interface QiitaUser {
   id: string
@@ -31,13 +20,6 @@ interface QiitaItem {
 }
 
 function App() {
-  const [count, setCount] = useState(0)
-
-  // JSONPlaceholder API demo
-  const { data, error, isLoading } = useSWR<User[]>(
-    'https://jsonplaceholder.typicode.com/users',
-    fetcher
-  )
 
   // Qiita API demo
   const {
@@ -49,51 +31,19 @@ function App() {
     qiitaFetcher
   )
 
+  // Qiita public items
   const {
-    data: qiitaItems,
-    error: qiitaItemsError,
-    isLoading: qiitaItemsLoading
+    data: publicItems,
+    error: publicItemsError,
+    isLoading: publicItemsLoading
   } = useSWR<QiitaItem[]>(
-    qiitaUser ? qiitaEndpoints.userItems(qiitaUser.id) : null,
+    `${qiitaEndpoints.items}?page=1&per_page=20`,
     qiitaFetcher
   )
 
   return (
     <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React + SWR</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-
-      <div className="card">
-        <h2>JSONPlaceholder API - User List</h2>
-        {isLoading && <p>Loading users...</p>}
-        {error && <p style={{ color: 'red' }}>Error: {error.message}</p>}
-        {data && (
-          <ul style={{ textAlign: 'left', maxWidth: '400px', margin: '0 auto' }}>
-            {data.slice(0, 5).map((user) => (
-              <li key={user.id}>
-                <strong>{user.name}</strong> ({user.username})
-                <br />
-                <small>{user.email}</small>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+      <h1>Qiita API Demo</h1>
 
       <div className="card">
         <h2>Qiita API - Authenticated User</h2>
@@ -118,12 +68,12 @@ function App() {
       </div>
 
       <div className="card">
-        <h2>Qiita API - My Items</h2>
-        {qiitaItemsLoading && <p>Loading items...</p>}
-        {qiitaItemsError && <p style={{ color: 'red' }}>Error: {qiitaItemsError.message}</p>}
-        {qiitaItems && (
+        <h2>Qiita API - Public Items</h2>
+        {publicItemsLoading && <p>Loading public items...</p>}
+        {publicItemsError && <p style={{ color: 'red' }}>Error: {publicItemsError.message}</p>}
+        {publicItems && (
           <ul style={{ textAlign: 'left', maxWidth: '600px', margin: '0 auto' }}>
-            {qiitaItems.slice(0, 5).map((item) => (
+            {publicItems.slice(0, 10).map((item) => (
               <li key={item.id}>
                 <a href={item.url} target="_blank" rel="noopener noreferrer">
                   <strong>{item.title}</strong>
@@ -137,10 +87,6 @@ function App() {
           </ul>
         )}
       </div>
-
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
     </>
   )
 }
